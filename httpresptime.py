@@ -12,8 +12,15 @@ import urllib3
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
+CHROME_USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'
+
+
+def get_http_headers(headers = {}):
+    return headers
+
+
 def get_redirected_url(url):
-    resp = requests.get(url, verify=False)
+    resp = requests.get(url, verify=False, headers=get_http_headers())
     return resp.url
 
 
@@ -25,7 +32,7 @@ def get_url_hostname(url):
 def time_url(url, num_requests=10, display_progress=True, use_keepalive=True):
     if use_keepalive:
         session = requests.Session()
-        session.get(url, verify=False)
+        session.get(url, verify=False, headers=get_http_headers())
     else:
         session = requests
     resp_times = []
@@ -33,7 +40,7 @@ def time_url(url, num_requests=10, display_progress=True, use_keepalive=True):
         print('Sending requests: ', end='', flush=True)
     for _ in range(num_requests):
         start = time.time()
-        r = session.get(url, verify=False)
+        r = session.get(url, verify=False, headers=get_http_headers())
         end = time.time()
         resp_times.append(end - start)
         r.raise_for_status()
@@ -60,7 +67,7 @@ def calc_resp_times(resp_times):
 
 
 def display_url_info(url, include_headers=False):
-    r = requests.get(url, verify=False)
+    r = requests.get(url, verify=False, headers=get_http_headers())
     print('Input URL: %s' % (url))
     print('Final URL: %s' % (r.url))
     print('HTTP status code: %d' % r.status_code)
@@ -101,6 +108,8 @@ def parse_args():
             help='display http response information headers (only with -i)')
     parser.add_argument('-p', '--parsable', default=False, action='store_true',
             help='machine parsable output')
+    parser.add_argument('--ua-spoof', default=False, action='store_true',
+            help='spoof a Chrome user agent')
     parser.add_argument('url', help='URL to check')
     args = parser.parse_args()
     return args
@@ -114,6 +123,8 @@ def print_using_url(url):
 def main():
     args = parse_args()
     url = args.url
+    if args.ua_spoof:
+        get_http_headers()['User-Agent'] = CHROME_USER_AGENT
     if '://' not in url:
         url = 'http://%s' % url
     if args.loop:
