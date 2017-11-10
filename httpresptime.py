@@ -1,4 +1,18 @@
 #!/usr/bin/env python3
+"""httpresptime - HTTP response time measurements.
+
+httpresptime is a tool to help with measurement of the response time of
+HTTP requests.
+
+The primary goal is to measure the time it takes the server to generate
+the response to the GET request, as such, keepalive is used when availble
+to avoid measuring TCP connection time.
+
+$ httpresptime www.google.com
+Using URL: http://www.google.se/?gfe_rd=cr&dcr=0&ei=b3UFWrjJC8T37gTYxrfYAQ (173.194.222.94)
+Sending requests: .....
+Response times (s): min: 0.0562 max: 0.0647 avg: 0.0607
+"""
 
 import sys
 import time
@@ -15,24 +29,31 @@ urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 CHROME_USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'
 
 
-def get_http_headers(headers = {}):
+def request_headers(headers = {}):
+    """Permanent store for request headers.
+
+    Returns a dict of request headers that can be updated for future calls.
+    """
     return headers
 
 
 def get_redirected_url(url):
-    resp = requests.get(url, verify=False, headers=get_http_headers())
+    """Get the final redirected URL for en URL."""
+    resp = requests.get(url, verify=False, headers=request_headers())
     return resp.url
 
 
 def get_url_hostname(url):
+    """Return the hostname part of an URL."""
     p_url = urlparse(url)
     return p_url.hostname
 
 
 def time_url(url, num_requests=10, display_progress=True, use_keepalive=True):
+    """Perform response time measurements for an URL."""
     if use_keepalive:
         session = requests.Session()
-        session.get(url, verify=False, headers=get_http_headers())
+        session.get(url, verify=False, headers=request_headers())
     else:
         session = requests
     resp_times = []
@@ -40,7 +61,7 @@ def time_url(url, num_requests=10, display_progress=True, use_keepalive=True):
         print('Sending requests: ', end='', flush=True)
     for _ in range(num_requests):
         start = time.time()
-        r = session.get(url, verify=False, headers=get_http_headers())
+        r = session.get(url, verify=False, headers=request_headers())
         end = time.time()
         resp_times.append(end - start)
         r.raise_for_status()
@@ -52,6 +73,7 @@ def time_url(url, num_requests=10, display_progress=True, use_keepalive=True):
 
 
 def calc_resp_times(resp_times):
+    """Calculate response times collected by time_url."""
     first = True
     ret = {'min_time': None, 'max_time': None, 'avg_time': None}
     total_time = 0
@@ -67,7 +89,8 @@ def calc_resp_times(resp_times):
 
 
 def display_url_info(url, include_headers=False):
-    r = requests.get(url, verify=False, headers=get_http_headers())
+    """Display information about an URL."""
+    r = requests.get(url, verify=False, headers=request_headers())
     print('Input URL: %s' % (url))
     print('Final URL: %s' % (r.url))
     print('HTTP status code: %d' % r.status_code)
@@ -86,6 +109,7 @@ def display_url_info(url, include_headers=False):
 
 
 def loop_url(url, delay=10, use_keepalive=True):
+    """Enter an endless loop that keeps requesting the same URL."""
     while True:
         now = datetime.datetime.now()
         print('%02d:%02d:%02d: ' % (now.hour, now.minute, now.second), end='', flush=True)
@@ -95,6 +119,7 @@ def loop_url(url, delay=10, use_keepalive=True):
 
 
 def parse_args():
+    """Command line argument handler."""
     parser = argparse.ArgumentParser(description='HTTP response time checker..')
     parser.add_argument('-n', '--requests', default=5, type=int, help='number of requests to run')
     parser.add_argument('--no-keepalive', default=True, dest='keepalive', action='store_false',
@@ -124,7 +149,7 @@ def main():
     args = parse_args()
     url = args.url
     if args.ua_spoof:
-        get_http_headers()['User-Agent'] = CHROME_USER_AGENT
+        request_headers()['User-Agent'] = CHROME_USER_AGENT
     if '://' not in url:
         url = 'http://%s' % url
     if args.loop:
@@ -149,4 +174,7 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        print('\nAborted.')
