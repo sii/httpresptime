@@ -124,6 +124,8 @@ def parse_args():
     parser.add_argument('-n', '--requests', default=5, type=int, help='number of requests to run')
     parser.add_argument('--no-keepalive', default=True, dest='keepalive', action='store_false',
             help='disable http keepalive')
+    parser.add_argument('--single', default=False, dest='single', action='store_true',
+            help='only send a single request, try to avoid cached responses')
     parser.add_argument('-l', '--loop', default=False, action='store_true',
             help='loop sending requests forever')
     parser.add_argument('--loop-delay', default=10, type=int, help='delay between requests with -l')
@@ -148,6 +150,9 @@ def print_using_url(url):
 def main():
     args = parse_args()
     url = args.url
+    if args.single:
+        args.requests = 1
+        args.keepalive = False
     if args.ua_spoof:
         request_headers()['User-Agent'] = CHROME_USER_AGENT
     if '://' not in url:
@@ -160,7 +165,10 @@ def main():
     elif args.info:
         display_url_info(url, args.headers)
     else:
-        redir_url = get_redirected_url(url)
+        if args.single:
+            redir_url = url
+        else:
+            redir_url = get_redirected_url(url)
         if not args.parsable:
             print_using_url(redir_url)
         display_progress = True
