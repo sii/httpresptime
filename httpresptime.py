@@ -114,7 +114,7 @@ def loop_url(url, delay=10, use_keepalive=True):
         now = datetime.datetime.now()
         print('%02d:%02d:%02d: ' % (now.hour, now.minute, now.second), end='', flush=True)
         res = time_url(url, num_requests=1, display_progress=False, use_keepalive=use_keepalive)
-        print('%.04f' % res['min_time'])
+        print('%.04f' % res['min_time'], flush=True)
         time.sleep(delay)
 
 
