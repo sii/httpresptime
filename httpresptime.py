@@ -9,7 +9,7 @@ the response to the GET request, as such, keepalive is used when availble
 to avoid measuring TCP connection time.
 
 $ httpresptime www.google.com
-Using URL: http://www.google.se/?gfe_rd=cr&dcr=0&ei=b3UFWrjJC8T37gTYxrfYAQ (173.194.222.94)
+Testing URL: http://www.google.se/?gfe_rd=cr&dcr=0&ei=b3UFWrjJC8T37gTYxrfYAQ (173.194.222.94)
 Sending requests: .....
 Response times (s): min: 0.0562 max: 0.0647 avg: 0.0607
 """
@@ -135,6 +135,8 @@ def parse_args():
             help='display http response information headers (only with -i)')
     parser.add_argument('-p', '--parsable', default=False, action='store_true',
             help='machine parsable output')
+    parser.add_argument('-r', '--report', default=False, action='store_true',
+            help='report mode, output appropriate for sharing with others')
     parser.add_argument('--ua-spoof', default=False, action='store_true',
             help='spoof a Chrome user agent')
     parser.add_argument('url', help='URL to check')
@@ -144,7 +146,7 @@ def parse_args():
 
 def print_using_url(url):
     url_ip = socket.gethostbyname(get_url_hostname(url))
-    print('Using URL: %s (%s)' % (url, url_ip))
+    print('Testing URL: %s (%s)' % (url, url_ip))
 
 
 def main():
@@ -172,11 +174,16 @@ def main():
         if not args.parsable:
             print_using_url(redir_url)
         display_progress = True
-        if args.parsable:
+        if args.parsable or args.report:
             display_progress = False
         resp = time_url(redir_url, args.requests, display_progress, args.keepalive)
         if args.parsable:
             print('%.04f %.04f %.04f' % (resp['min_time'], resp['max_time'], resp['avg_time']))
+        elif args.report:
+            print('Response times in seconds (tested %d times):' % args.requests)
+            print('Average: %.04f' % (resp['avg_time']))
+            print('Minimum: %.04f' % (resp['min_time']))
+            print('Maximum: %.04f' % (resp['max_time']))
         else:
             print('Response times (s): min: %.04f max: %.04f avg: %.04f' % (resp['min_time'], resp['max_time'], resp['avg_time']))
 
