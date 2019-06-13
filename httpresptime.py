@@ -68,7 +68,10 @@ def time_url(url, num_requests=10, display_progress=True, use_keepalive=True):
             print('.', end='', flush=True)
     if display_progress:
         print()
-    return calc_resp_times(resp_times)
+    ret = calc_resp_times(resp_times)
+    ret['last_status_code'] = r.status_code
+    ret['last_size'] = len(r.text)
+    return ret
 
 
 def calc_resp_times(resp_times):
@@ -107,13 +110,16 @@ def display_url_info(url, include_headers=False):
         print('Content-type: %s' % r.headers.get('content-type'))
 
 
-def loop_url(url, delay=10, use_keepalive=True):
+def loop_url(url, delay=10, use_keepalive=True, verbose=False):
     """Enter an endless loop that keeps requesting the same URL."""
     while True:
         now = datetime.datetime.now()
         print('%02d:%02d:%02d: ' % (now.hour, now.minute, now.second), end='', flush=True)
         res = time_url(url, num_requests=1, display_progress=False, use_keepalive=use_keepalive)
-        print('%.04f' % res['min_time'], flush=True)
+        if verbose:
+            print('%.04f  retcode: %s, size: %s' % (res['min_time'], res['last_status_code'], res['last_size']), flush=True)
+        else:
+            print('%.04f' % res['min_time'], flush=True)
         time.sleep(delay)
 
 
@@ -128,6 +134,8 @@ def parse_args():
     parser.add_argument('-l', '--loop', default=False, action='store_true',
                         help='loop sending requests forever')
     parser.add_argument('--loop-delay', default=10, type=int, help='delay between requests with -l')
+    parser.add_argument('--loop-verbose', default=False, action='store_true',
+                        help='include size and retcode when using -l')
     parser.add_argument('-i', '--info', default=False, action='store_true',
                         help='display http response information')
     parser.add_argument('-H', '--display-headers', default=False, dest='headers', action='store_true',
@@ -162,7 +170,7 @@ def main():
         redir_url = get_redirected_url(url)
         if not args.parsable:
             print_using_url(redir_url)
-        loop_url(redir_url, args.loop_delay, args.keepalive)
+        loop_url(redir_url, args.loop_delay, args.keepalive, args.loop_verbose)
     elif args.info:
         display_url_info(url, args.headers)
     else:
