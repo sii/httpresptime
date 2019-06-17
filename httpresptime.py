@@ -114,12 +114,19 @@ def loop_url(url, delay=10, use_keepalive=True, verbose=False):
     """Enter an endless loop that keeps requesting the same URL."""
     while True:
         now = datetime.datetime.now()
-        print('%02d:%02d:%02d: ' % (now.hour, now.minute, now.second), end='', flush=True)
-        res = time_url(url, num_requests=1, display_progress=False, use_keepalive=use_keepalive)
         if verbose:
-            print('%.04f  retcode: %s, size: %s' % (res['min_time'], res['last_status_code'], res['last_size']), flush=True)
+            print('%04d-%02d-%02d %02d:%02d:%02d: ' % (now.year, now.month, now.day, now.hour, now.minute, now.second), end='', flush=True)
         else:
-            print('%.04f' % res['min_time'], flush=True)
+            print('%02d:%02d:%02d: ' % (now.hour, now.minute, now.second), end='', flush=True)
+        try:
+            res = time_url(url, num_requests=1, display_progress=False, use_keepalive=use_keepalive)
+        except Exception as e:
+            print('ERROR: %s' % str(e))
+        else:
+            if verbose:
+                print('%.04fs  retcode: %s, size: %s' % (res['min_time'], res['last_status_code'], res['last_size']), flush=True)
+            else:
+                print('%.04f' % res['min_time'], flush=True)
         time.sleep(delay)
 
 
