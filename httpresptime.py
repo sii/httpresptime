@@ -20,11 +20,12 @@ import datetime
 import requests
 import socket
 from urllib.parse import urlparse
-## Disable warnings about not doing SSL verification
+# Disable warnings about not doing SSL verification
 import urllib3
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
+REQUEST_TIMEOUT = 30
 CHROME_USER_AGENT = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/51.0.2704.103 Safari/537.36'
 
 
@@ -38,7 +39,7 @@ def request_headers(headers={}):
 
 def get_redirected_url(url):
     """Get the final redirected URL for en URL."""
-    resp = requests.get(url, verify=False, headers=request_headers())
+    resp = requests.get(url, verify=False, headers=request_headers(), timeout=REQUEST_TIMEOUT)
     return resp.url
 
 
@@ -52,7 +53,7 @@ def time_url(url, num_requests=10, display_progress=True, use_keepalive=True):
     """Perform response time measurements for an URL."""
     if use_keepalive:
         session = requests.Session()
-        session.get(url, verify=False, headers=request_headers())
+        session.get(url, verify=False, headers=request_headers(), timeout=REQUEST_TIMEOUT)
     else:
         session = requests
     resp_times = []
@@ -60,7 +61,7 @@ def time_url(url, num_requests=10, display_progress=True, use_keepalive=True):
         print('Sending requests: ', end='', flush=True)
     for _ in range(num_requests):
         start = time.time()
-        r = session.get(url, verify=False, headers=request_headers())
+        r = session.get(url, verify=False, headers=request_headers(), timeout=REQUEST_TIMEOUT)
         end = time.time()
         resp_times.append(end - start)
         r.raise_for_status()
@@ -92,7 +93,7 @@ def calc_resp_times(resp_times):
 
 def display_url_info(url, include_headers=False):
     """Display information about an URL."""
-    r = requests.get(url, verify=False, headers=request_headers())
+    r = requests.get(url, verify=False, headers=request_headers(), timeout=REQUEST_TIMEOUT)
     print('Input URL: %s' % url)
     print('Final URL: %s' % r.url)
     print('HTTP status code: %d' % r.status_code)
